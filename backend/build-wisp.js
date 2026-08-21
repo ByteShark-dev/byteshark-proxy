@@ -3,55 +3,46 @@ import path from 'node:path';
 import { buildSync } from 'esbuild';
 
 const wispDir = path.resolve('node_modules/wisp-server-node');
-const distDir = path.join(wispDir, 'dist');
 
 if (!fs.existsSync(wispDir)) {
     console.log('[BUILD-WISP] Módulo wisp-server-node no encontrado.');
     process.exit(0);
 }
 
-// Escaneo recursivo de archivos TypeScript dentro del paquete
-function findTsFiles(dir) {
-    let results = [];
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
+// 1. Crear directorio dist
+const distDir = path.join(wispDir, 'dist');
+fs.mkdirSync(distDir, { recursive: true });
 
-    for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-            if (entry.name !== 'node_modules' && entry.name !== 'dist') {
-                results = results.concat(findTsFiles(fullPath));
-            }
-        } else if (entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts')) {
-            results.push(fullPath);
-        }
-    }
-    return results;
+// 2. Localizar punto de entrada principal
+let entryPoint = path.join(wispDir, 'src/index.ts');
+if (!fs.existsSync(entryPoint)) {
+    const srcFiles = fs.readdirSync(path.join(wispDir, 'src'));
+    const tsFile = srcFiles.find(f => f.endsWith('.ts'));
+    if (tsFile) entryPoint = path.join(wispDir, 'src', tsFile);
 }
 
-const tsFiles = findTsFiles(wispDir);
+// 3. Empaquetar todo el código en un único bundle ESM
+buildSync({
+    entryPoints: [entryPoint],
+    outFile: path.join(distDir, 'index.js'),
+    bundle: true,
+    format: 'esm',
+    platform: 'node',
+    target: 'node18',
+    external: ['ws'] // Mantiene websocket nativo como dependencia externa
+});
 
-// Transpilación individual a ES Modules preservando estructura en dist/
-for (const file of tsFiles) {
-    const relativePath = path.relative(wispDir, file);
-    
-    // Normalizar ruta removiendo prefijo src/ si está presente
-    let targetPath = relativePath.startsWith(`src${path.sep}`) 
-        ? relativePath.substring(4) 
-        : relativePath;
-
-    targetPath = targetPath.replace(/\.ts$/, '.js');
-    const outFile = path.join(distDir, targetPath);
-
-    fs.mkdirSync(path.dirname(outFile), { recursive: true });
-
-    buildSync({
-        entryPoints: [file],
-        outFile: outFile,
-        format: 'esm',
-        platform: 'node',
-        target: 'node18',
-        logLevel: 'silent'
-    });
+// 4. Parchear el package.json de wisp para forzar el punto de entrada al bundle generado
+const pkgPath = path.join(wispDir, 'package.json');
+if (fs.existsSync(pkgPath)) {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    pkg.main = './dist/index.js';
+    pkg.module = './dist/index.js';
+    pkg.type = 'module';
+    pkg.exports = {
+        ".": "./dist/index.js"
+    };
+    fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
 }
 
-console.log(`[BUILD-WISP] Compilados ${tsFiles.length} archivos TypeScript en dist/`);
+console.log('[BUILD-WISP] Bundle compilado correctamente en dist/index.js');
