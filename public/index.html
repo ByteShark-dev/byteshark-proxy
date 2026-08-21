@@ -9,8 +9,19 @@
 <body>
   <main class="shell">
     <p class="eyebrow">ByteShark · Local Lab</p>
-    <h1>Arquitectura tipo Ultraviolet, sin proxy externo</h1>
-    <p class="lead">Este entorno reproduce frontend, Service Worker, Node y WebSocket para estudiar cómo se conectan las piezas de una app lista para hosting.</p>
+    <h1>Arquitectura tipo Ultraviolet, confinada a localhost</h1>
+    <p class="lead">Este entorno reproduce URL rewriting, Service Worker, BareMux-lab, Epoxy-lab, Wisp-lab, proxy-lab y un origen virtual. No contiene una función para abrir destinos externos.</p>
+
+    <section class="browser-card">
+      <div class="browser-bar">
+        <input id="url-input" aria-label="URL virtual" />
+        <button id="navigate">Navegar</button>
+      </div>
+      <p class="meta">URL física: <code id="proxy-url">Sin calcular</code></p>
+      <iframe id="proxy-frame" title="Sitio virtual del laboratorio"></iframe>
+      <h3>Trace del transporte</h3>
+      <pre id="proxy-trace">Sin ejecutar</pre>
+    </section>
 
     <section class="grid">
       <article>
@@ -21,16 +32,17 @@
       </article>
 
       <article>
-        <h2>WebSocket transport</h2>
+        <h2>BareMux / Epoxy / Wisp</h2>
         <p id="ws-status">Desconectado</p>
-        <button id="ws-test">Enviar mensaje</button>
+        <button id="ws-test">Probar transporte</button>
         <pre id="ws-output">Sin ejecutar</pre>
       </article>
     </section>
 
     <section class="diagram">
-      <code>Navegador → Service Worker → App local → WebSocket → Node.js</code>
-      <small>Salida hacia Internet: desactivada</small>
+      <code>URL lógica → URL rewrite → Service Worker → /uv-lab/… → proxy-lab → origen virtual</code>
+      <code>URL lógica → BareMux-lab → Epoxy-lab → Wisp-lab → proxy-lab → origen virtual</code>
+      <small>Salida hacia Internet: desactivada por diseño</small>
     </section>
   </main>
 
