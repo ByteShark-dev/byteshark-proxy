@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "postinstall": "npx tsc -p node_modules/wisp-server-node --skipLibCheck",
+    "postinstall": "node build-wisp.js",
     "start": "node server.js"
   },
   "dependencies": {
-    "wisp-server-node": "github:MercuryWorkshop/wisp-server-node",
     "@tomphttp/bare-server-node": "^2.0.3",
+    "esbuild": "^0.20.0",
     "express": "^4.18.2",
-    "typescript": "^5.3.3"
+    "wisp-server-node": "github:MercuryWorkshop/wisp-server-node"
   }
 }
