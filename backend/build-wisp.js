@@ -2,56 +2,44 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { buildSync } from 'esbuild';
 
-// Ruta al módulo wisp-server-node dentro de node_modules
 const wispDir = path.resolve('node_modules/wisp-server-node');
 
 if (!fs.existsSync(wispDir)) {
-    console.log('[BUILD-WISP] Módulo wisp-server-node no encontrado.');
+    console.log('[BUILD-WISP] wisp-server-node no encontrado.');
     process.exit(0);
 }
 
 const distDir = path.join(wispDir, 'dist');
 fs.mkdirSync(distDir, { recursive: true });
 
-// Recorrer el directorio recursivamente ignorando carpetas no deseadas
-function getAllFiles(dir) {
+// Obtención recursiva de archivos fuente TypeScript/JavaScript
+function getFiles(dir) {
     let results = [];
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-    for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-            if (entry.name !== 'node_modules' && entry.name !== 'dist' && entry.name !== '.git') {
-                results = results.concat(getAllFiles(fullPath));
+    const list = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of list) {
+        const full = path.join(dir, item.name);
+        if (item.isDirectory()) {
+            if (item.name !== 'node_modules' && item.name !== 'dist' && item.name !== '.git') {
+                results = results.concat(getFiles(full));
             }
-        } else if (entry.isFile()) {
-            results.push(fullPath);
+        } else if (item.isFile() && (item.name.endsWith('.ts') || item.name.endsWith('.js')) && !item.name.endsWith('.d.ts')) {
+            results.push(full);
         }
     }
     return results;
 }
 
-const allFiles = getAllFiles(wispDir);
-const codeFiles = allFiles.filter(f => 
-    (f.endsWith('.ts') || f.endsWith('.js') || f.endsWith('.mjs')) && 
-    !f.endsWith('.d.ts')
-);
+const files = getFiles(wispDir);
 
-console.log(`[BUILD-WISP] Transpilando ${codeFiles.length} archivos de código...`);
+// 1. Compilación individual preservando rutas en dist/ y mapeo directo
+for (const file of files) {
+    const rel = path.relative(wispDir, file);
+    const jsRel = rel.replace(/\.(ts|js)$/, '.js');
 
-// Transpilar cada archivo a ES Modules en dist/
-for (const file of codeFiles) {
-    const relativePath = path.relative(wispDir, file);
-    const jsName = relativePath.replace(/\.(ts|js|mjs)$/, '.js');
-    
-    const targets = [path.join(distDir, jsName)];
-    
-    // Si el código fuente está dentro de src/, duplicar la salida en la raíz de dist/
-    if (jsName.startsWith(`src${path.sep}`)) {
-        targets.push(path.join(distDir, jsName.substring(4)));
-    }
+    const out1 = path.join(distDir, jsRel);
+    const out2 = path.join(distDir, jsRel.replace(/^src[\\\/]/, ''));
 
-    for (const outFile of targets) {
+    for (const outFile of [out1, out2]) {
         fs.mkdirSync(path.dirname(outFile), { recursive: true });
         try {
             buildSync({
@@ -62,30 +50,36 @@ for (const file of codeFiles) {
                 target: 'node18',
                 logLevel: 'silent'
             });
-        } catch (e) {
-            console.error(`[BUILD-WISP] Error en ${file}:`, e.message);
-        }
+        } catch (e) {}
     }
 }
 
-// Ajustar package.json para resolver las importaciones de Node ESM
+// 2. Generación de bundle unificado en dist/index.js
+const entryCandidate = files.find(f => f.endsWith('index.ts') || f.endsWith('server.ts') || f.endsWith('index.js')) || files[0];
+if (entryCandidate) {
+    try {
+        buildSync({
+            entryPoints: [entryCandidate],
+            outFile: path.join(distDir, 'index.js'),
+            bundle: true,
+            format: 'esm',
+            platform: 'node',
+            target: 'node18',
+            external: ['ws'],
+            logLevel: 'silent'
+        });
+    } catch (e) {}
+}
+
+// 3. Reconfiguración de package.json del paquete remoto
 const pkgPath = path.join(wispDir, 'package.json');
 if (fs.existsSync(pkgPath)) {
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    
-    let mainFile = './dist/index.js';
-    if (!fs.existsSync(path.join(distDir, 'index.js')) && fs.existsSync(path.join(distDir, 'server.js'))) {
-        mainFile = './dist/server.js';
-    }
-
-    pkg.main = mainFile;
-    pkg.module = mainFile;
+    pkg.main = './dist/index.js';
+    pkg.module = './dist/index.js';
     pkg.type = 'module';
-    pkg.exports = {
-        ".": mainFile,
-        "./*": "./dist/*"
-    };
+    delete pkg.exports;
     fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
 }
 
-console.log('[BUILD-WISP] Proceso finalizado correctamente.');
+console.log('[BUILD-WISP] Compilación y parches finalizados.');
