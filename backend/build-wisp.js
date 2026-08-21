@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { buildSync } from 'esbuild';
 
+// Ruta al módulo wisp-server-node y carpeta destino local
 const wispDir = path.resolve('node_modules/wisp-server-node');
 const outDir = path.resolve('lib');
 
@@ -12,27 +13,41 @@ if (!fs.existsSync(wispDir)) {
 
 fs.mkdirSync(outDir, { recursive: true });
 
-// Buscar entrada principal en el paquete
-const candidates = [
-    'src/index.ts', 'src/server.ts', 'src/index.js',
-    'index.ts', 'server.ts', 'index.js'
-];
+// Buscar recursivamente todos los archivos de código
+function getCodeFiles(dir) {
+    let files = [];
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
 
-let entry = null;
-for (const cand of candidates) {
-    const p = path.join(wispDir, cand);
-    if (fs.existsSync(p)) {
-        entry = p;
-        break;
+    for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            if (entry.name !== 'node_modules' && entry.name !== 'dist' && entry.name !== '.git') {
+                files = files.concat(getCodeFiles(fullPath));
+            }
+        } else if (entry.isFile() && (entry.name.endsWith('.ts') || entry.name.endsWith('.js')) && !entry.name.endsWith('.d.ts')) {
+            files.push(fullPath);
+        }
     }
+    return files;
 }
 
+const allFiles = getCodeFiles(wispDir);
+
+// Seleccionar el archivo principal por prioridad
+const entry = allFiles.find(f => /index\.(ts|js)$/i.test(f))
+           || allFiles.find(f => /server\.(ts|js)$/i.test(f))
+           || allFiles.find(f => /wisp\.(ts|js)$/i.test(f))
+           || allFiles.find(f => /main\.(ts|js)$/i.test(f))
+           || allFiles[0];
+
 if (!entry) {
-    console.error('[BUILD-WISP] No se encontró el punto de entrada.');
+    console.error('[BUILD-WISP] No se encontraron archivos de código fuente.');
     process.exit(1);
 }
 
-// Generar bundle ESM en la carpeta local lib/
+console.log(`[BUILD-WISP] Entrada detectada: ${path.relative(wispDir, entry)}`);
+
+// Empaquetar en un único archivo ESM local en lib/wisp-server.js
 buildSync({
     entryPoints: [entry],
     outFile: path.join(outDir, 'wisp-server.js'),
@@ -44,4 +59,4 @@ buildSync({
     logLevel: 'silent'
 });
 
-console.log('[BUILD-WISP] Bundle local generado correctamente en lib/wisp-server.js');
+console.log('[BUILD-WISP] Bundle local generado exitosamente en lib/wisp-server.js');
