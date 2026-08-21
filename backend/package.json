@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "postinstall": "cd node_modules/wisp-server-node && npm install --include=dev && npm run build",
+    "postinstall": "npx esbuild node_modules/wisp-server-node/src/index.ts --bundle --platform=node --format=esm --outfile=node_modules/wisp-server-node/dist/index.js",
     "start": "node server.js"
   },
   "dependencies": {
     "wisp-server-node": "github:MercuryWorkshop/wisp-server-node",
     "@tomphttp/bare-server-node": "^2.0.3",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "esbuild": "^0.20.0"
   }
 }
