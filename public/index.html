@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ByteShark Proxy Architecture Lab</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="shell">
+    <p class="eyebrow">ByteShark · Local Lab</p>
+    <h1>Arquitectura tipo Ultraviolet, sin proxy externo</h1>
+    <p class="lead">Este entorno reproduce frontend, Service Worker, Node y WebSocket para estudiar cómo se conectan las piezas de una app lista para hosting.</p>
+
+    <section class="grid">
+      <article>
+        <h2>Service Worker</h2>
+        <p id="sw-status">Comprobando…</p>
+        <button id="api-test">Probar request local</button>
+        <pre id="api-output">Sin ejecutar</pre>
+      </article>
+
+      <article>
+        <h2>WebSocket transport</h2>
+        <p id="ws-status">Desconectado</p>
+        <button id="ws-test">Enviar mensaje</button>
+        <pre id="ws-output">Sin ejecutar</pre>
+      </article>
+    </section>
+
+    <section class="diagram">
+      <code>Navegador → Service Worker → App local → WebSocket → Node.js</code>
+      <small>Salida hacia Internet: desactivada</small>
+    </section>
+  </main>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
