@@ -1,1 +1,0 @@
-This repository is intended for local laboratory inspection only. Public deployment or use to circumvent network access controls is out of scope.
