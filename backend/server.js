@@ -1,7 +1,7 @@
 import express from 'express';
 import { createServer } from 'node:http';
 import { createBareServer } from '@tomphttp/bare-server-node';
-import wisp from 'wisp-server-node';
+import { server as wisp } from '@mercuryworkshop/wisp-js/server';
 
 const bareServer = createBareServer('/bare/');
 const app = express();
