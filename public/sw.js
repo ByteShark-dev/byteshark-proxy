@@ -1,4 +1,4 @@
-const LAB_PREFIX = "/lab-api/";
+const LAB_PREFIXES = ["/lab-api/", "/uv-lab/"];
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -10,20 +10,22 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
+  const isLabRequest = url.origin === self.location.origin
+    && LAB_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
 
-  // Solo observa y marca tráfico del propio laboratorio.
-  // Nunca reescribe destinos externos ni actúa como proxy.
-  if (url.origin === self.location.origin && url.pathname.startsWith(LAB_PREFIX)) {
-    event.respondWith((async () => {
-      const response = await fetch(event.request);
-      const headers = new Headers(response.headers);
-      headers.set("x-byteshark-lab-sw", "intercepted");
-
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers
-      });
-    })());
+  if (!isLabRequest) {
+    return;
   }
+
+  event.respondWith((async () => {
+    const response = await fetch(event.request);
+    const headers = new Headers(response.headers);
+    headers.set("x-byteshark-lab-sw", "intercepted");
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers
+    });
+  })());
 });
