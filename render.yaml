@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: byteshark-proxy-lab
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 127.0.0.1
