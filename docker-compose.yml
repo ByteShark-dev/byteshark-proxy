@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      HOST: 127.0.0.1
+    network_mode: host
+    restart: unless-stopped
