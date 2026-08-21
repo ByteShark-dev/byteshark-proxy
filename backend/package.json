@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "postinstall": "cd node_modules/wisp-server-node && npm install --include=dev && npm run build",
     "start": "node server.js"
   },
   "dependencies": {
