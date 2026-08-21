@@ -1,14 +1,14 @@
 import express from 'express';
 import { createServer } from 'node:http';
 import { createBareServer } from '@tomphttp/bare-server-node';
-import wisp from 'wisp-server-node';
+import wispModule from './lib/wisp-server.js';
+
+// Extraer el handler según exportación ESM
+const wisp = wispModule?.routeRequest ? wispModule : (wispModule?.default || wispModule);
 
 const bareServer = createBareServer('/bare/');
 const app = express();
 const server = createServer();
-
-// Manejo flexible de exportación por defecto o nombrada
-const wispHandler = wisp?.routeRequest ? wisp : (wisp?.server || wisp?.wisp || wisp);
 
 server.on('request', (req, res) => {
     if (bareServer.shouldRoute(req)) {
@@ -20,7 +20,7 @@ server.on('request', (req, res) => {
 
 server.on('upgrade', (req, socket, head) => {
     if (req.url.endsWith('/wisp/')) {
-        wispHandler.routeRequest(req, socket, head);
+        wisp.routeRequest(req, socket, head);
     } else if (bareServer.shouldRoute(req)) {
         bareServer.routeUpgrade(req, socket, head);
     } else {
