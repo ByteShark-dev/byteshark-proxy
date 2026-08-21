@@ -1,7 +1,0 @@
-{
-  "name": "ultraviolet-lab-copy",
-  "private": true,
-  "scripts": {
-    "start": "node src/index.js"
-  }
-}
