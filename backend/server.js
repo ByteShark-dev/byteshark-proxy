@@ -1,15 +1,17 @@
-import express from 'express';
-import { createServer } from 'node:http';
-import { createBareServer } from '@tomphttp/bare-server-node';
-import wispModule from './lib/wisp-server.js';
+const express = require('express');
+const { createServer } = require('node:http');
+const { createBareServer } = require('@tomphttp/bare-server-node');
+const wisp = require('wisp-server-node');
 
-// Extraer el handler según exportación ESM
-const wisp = wispModule?.routeRequest ? wispModule : (wispModule?.default || wispModule);
-
+// Initialize Bare server
 const bareServer = createBareServer('/bare/');
 const app = express();
 const server = createServer();
 
+// Normalize Wisp handler for CommonJS compatibility
+const wispHandler = wisp.routeRequest ? wisp : (wisp.default || wisp);
+
+// HTTP route handling
 server.on('request', (req, res) => {
     if (bareServer.shouldRoute(req)) {
         bareServer.routeRequest(req, res);
@@ -18,9 +20,10 @@ server.on('request', (req, res) => {
     }
 });
 
+// WebSocket upgrade handling
 server.on('upgrade', (req, socket, head) => {
     if (req.url.endsWith('/wisp/')) {
-        wisp.routeRequest(req, socket, head);
+        wispHandler.routeRequest(req, socket, head);
     } else if (bareServer.shouldRoute(req)) {
         bareServer.routeUpgrade(req, socket, head);
     } else {
@@ -28,7 +31,9 @@ server.on('upgrade', (req, socket, head) => {
     }
 });
 
+// Health check endpoint
 app.get('/', (req, res) => res.send('ByteShark Proxy Backend: Online'));
 
+// Server boot
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => console.log(`[CORE] Servidor activo en puerto ${PORT}`));
