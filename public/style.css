@@ -1,0 +1,14 @@
+* { box-sizing: border-box; }
+:root { font-family: Inter, system-ui, sans-serif; color-scheme: dark; }
+body { margin: 0; min-height: 100vh; background: #0b1020; color: #eef2ff; }
+.shell { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 64px 0; }
+.eyebrow { text-transform: uppercase; letter-spacing: .14em; opacity: .65; font-size: .78rem; }
+h1 { max-width: 760px; font-size: clamp(2rem, 6vw, 4rem); line-height: 1; margin: 12px 0 18px; }
+.lead { max-width: 760px; line-height: 1.65; opacity: .82; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin: 36px 0; }
+article, .diagram { border: 1px solid rgba(255,255,255,.14); border-radius: 18px; padding: 22px; background: rgba(255,255,255,.04); }
+button { border: 0; border-radius: 10px; padding: 10px 14px; font: inherit; cursor: pointer; }
+pre { min-height: 120px; padding: 14px; overflow: auto; border-radius: 12px; background: rgba(0,0,0,.3); white-space: pre-wrap; }
+.diagram { display: grid; gap: 8px; }
+.diagram code { font-size: 1rem; }
+.diagram small { opacity: .6; }
