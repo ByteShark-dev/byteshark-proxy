@@ -6,7 +6,7 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "@mercuryworkshop/wisp-server-node": "^1.1.2",
+    "wisp-server-node": "github:MercuryWorkshop/wisp-server-node",
     "@tomphttp/bare-server-node": "^2.0.3",
     "express": "^4.18.2"
   }
